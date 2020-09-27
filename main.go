@@ -1,61 +1,56 @@
 package main
 
 import (
-	"encoding/json"
-	"github.com/joho/godotenv"
+	"fmt"
+	"github.com/urfave/cli"
 	"gobot/config"
-	"gobot/models"
-	"io/ioutil"
+	"gobot/db"
+
+	//"gobot/config"
 	"log"
-	"net/http"
-	"strconv"
+	"os"
 )
 
-type BotApi struct {
-	url    string
-	offset int
-}
-
-func init() {
-	if err := godotenv.Load(); err != nil {
-		log.Print("No .env file found")
-	}
-}
-
 func main() {
+	app := cli.NewApp()
 	conf := config.New()
-	api := &BotApi{url: conf.Bot.Url}
 
-	for {
-		updates, err := getUpdates(api)
-		if err != nil {
-			panic(err.Error())
-		}
-		for _, update := range updates {
-			i := &Invoker{
-				update: update,
-				api:    api,
-			}
-			registerActions(i, conf)
-			i.ExecuteActions()
-		}
+	app.Commands = []*cli.Command{
+		{
+			Name:    "run",
+			Usage:   "Run gobot demon",
+			Action:  func(c *cli.Context) error {
+				Run(conf)
+				return nil
+			},
+		},
+		{
+			Name:        "db",
+			Usage:       "options for task templates",
+			Subcommands: []*cli.Command{
+				{
+					Name:  "deploy",
+					Usage: "Deploy new db schema",
+					Action: func(c *cli.Context) error {
+						//c.Args().First()
+						db.Deploy(c, conf)
+						return nil
+					},
+				},
+				{
+					Name:  "migrate",
+					Usage: "Update DB schema",
+					Action: func(c *cli.Context) error {
+						fmt.Println("removed task template: ", c.Args().First())
+						return nil
+					},
+				},
+			},
+		},
 	}
-}
 
-func getUpdates(api *BotApi) ([]models.Update, error) {
-	resp, err := http.Get(api.url + "/getUpdates" + "?offset=" + strconv.Itoa(api.offset))
+	err := app.Run(os.Args)
 	if err != nil {
-		return nil, err
+		log.Fatal(err)
 	}
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	var restResponse models.RestResponse
-	err = json.Unmarshal(body, &restResponse)
-	if err != nil {
-		return nil, err
-	}
-	return restResponse.Result, nil
 }
