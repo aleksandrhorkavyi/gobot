@@ -64,3 +64,11 @@ func answerUserAgree() bool {
 	fmt.Println("Please, type y or n")
 	return answerUserAgree()
 }
+
+func Connection() *sql.DB {
+	db, err := sql.Open("sqlite3", "./gobot.db")
+	if err != nil {
+		panic(err)
+	}
+	return db
+}

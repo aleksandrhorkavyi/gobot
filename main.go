@@ -5,8 +5,6 @@ import (
 	"github.com/urfave/cli"
 	"gobot/config"
 	"gobot/db"
-
-	//"gobot/config"
 	"log"
 	"os"
 )
